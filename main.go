@@ -1,7 +1,7 @@
 package main
 
 import (
-	"api_get/handler"
+	"first_api/handler"
 	"fmt"
 	"net/http"
 
@@ -24,6 +24,11 @@ func main() {
 
 	// c.
 	router.Get("/products/{id}", h.GetProductById())
+
+	// d.
+	router.Get("/products/search", h.GetProductsGreaterThan())
+
+	router.Post("/products", h.CreateProduct())
 
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
