@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"sort"
+	"strconv"
 )
 
 type DefaultProducts struct {
@@ -20,10 +21,8 @@ func NewDefaultProducts(sv internal.ProductService) *DefaultProducts {
 
 type BodyResponse struct {
 	Message string `json:"message"`
-	// TODO: Preguntar cuál de estas dos opciones es mejor.
-	//Data    internal.Product `json:"data"`
-	Data  any  `json:"data"`
-	Error bool `json:"error"`
+	Data    any    `json:"data"`
+	Error   bool   `json:"error"`
 }
 
 func (dp *DefaultProducts) GetProducts() http.HandlerFunc {
@@ -64,7 +63,22 @@ func (dp *DefaultProducts) GetProductByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
-		product, err := dp.sv.GetProductByID(id)
+		// Válido que id sea un int
+		idInt, err := strconv.Atoi(id)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: internal.ErrInvalidID.Error(),
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+			return
+		}
+
+		product, err := dp.sv.GetProductByID(idInt)
 		if err != nil {
 			code := http.StatusBadRequest
 			body := BodyResponse{

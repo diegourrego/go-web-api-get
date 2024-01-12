@@ -8,5 +8,5 @@ var (
 
 type ProductService interface {
 	GetProducts() map[int]Product
-	GetProductByID(productID string) (Product, error)
+	GetProductByID(productID int) (Product, error)
 }

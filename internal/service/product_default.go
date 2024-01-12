@@ -2,7 +2,6 @@ package service
 
 import (
 	"first_api/internal"
-	"strconv"
 )
 
 // ¡Acá debemos hacer las validaciones!
@@ -23,19 +22,14 @@ func (pd *ProductDefault) GetProducts() map[int]internal.Product {
 	return products
 }
 
-func (pd *ProductDefault) GetProductByID(productID string) (internal.Product, error) {
-	// Válido que id sea un int
-	id, err := strconv.Atoi(productID)
-	if err != nil {
-		return internal.Product{}, internal.ErrInvalidID
-	}
+func (pd *ProductDefault) GetProductByID(productID int) (internal.Product, error) {
 
 	// Válido que el ID sea mayor a 0
-	if id <= 0 {
+	if productID <= 0 {
 		return internal.Product{}, internal.ErrInvalidID
 	}
 
-	product, err := pd.rp.GetProductByID(id)
+	product, err := pd.rp.GetProductByID(productID)
 	if err != nil {
 		return internal.Product{}, err
 	}
