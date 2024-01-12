@@ -30,3 +30,15 @@ func (pm *ProductMap) GetProductByID(productID int) (internal.Product, error) {
 
 	return product, nil
 }
+
+func (pm *ProductMap) GetProductWithPriceHigherThan(productPrice float64) (map[int]internal.Product, error) {
+	productsFounded := make(map[int]internal.Product)
+
+	for _, product := range pm.db {
+		if product.Price > productPrice {
+			productsFounded[product.ID] = product
+		}
+	}
+
+	return productsFounded, nil
+}

@@ -36,3 +36,17 @@ func (pd *ProductDefault) GetProductByID(productID int) (internal.Product, error
 
 	return product, nil
 }
+
+func (pd *ProductDefault) GetProductWithPriceHigherThan(productPrice float64) (map[int]internal.Product, error) {
+	// Validations
+	if productPrice < 0.0 {
+		return nil, internal.ErrInvalidPrice
+	}
+
+	productsFounded, err := pd.rp.GetProductWithPriceHigherThan(productPrice)
+	if err != nil {
+		return nil, err
+	}
+
+	return productsFounded, nil
+}

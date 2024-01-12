@@ -19,6 +19,12 @@ func NewDefaultProducts(sv internal.ProductService) *DefaultProducts {
 	}
 }
 
+type GetProductsBodyResponse struct {
+	Message string             `json:"message"`
+	Data    []internal.Product `json:"data"`
+	Error   bool               `json:"error"`
+}
+
 type BodyResponse struct {
 	Message string `json:"message"`
 	Data    any    `json:"data"`
@@ -28,12 +34,6 @@ type BodyResponse struct {
 func (dp *DefaultProducts) GetProducts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		productsMap := dp.sv.GetProducts()
-
-		type GetProductsBodyResponse struct {
-			Message string             `json:"message"`
-			Data    []internal.Product `json:"data"`
-			Error   bool               `json:"error"`
-		}
 
 		var products []internal.Product
 
@@ -102,5 +102,68 @@ func (dp *DefaultProducts) GetProductByID() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
 		json.NewEncoder(w).Encode(body)
+	}
+}
+
+func (dp *DefaultProducts) GetProductsWithPriceHigherThan() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		priceGtStr := r.URL.Query().Get("priceGt")
+		price, err := strconv.ParseFloat(priceGtStr, 64)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: internal.ErrInvalidPriceFormat.Error(),
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+			return
+		}
+
+		productsObtained, err := dp.sv.GetProductWithPriceHigherThan(price)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: err.Error(),
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+			return
+		}
+
+		var products []internal.Product
+
+		for _, product := range productsObtained {
+			products = append(products, product)
+		}
+
+		// Organizo los productos por precio
+		sort.Slice(products, func(i, j int) bool {
+			return products[i].Price < products[j].Price
+		})
+
+		code := http.StatusOK
+		body := GetProductsBodyResponse{
+			Message: "Products obtained successfully",
+			Data:    products,
+			Error:   false,
+		}
+
+		if len(products) == 0 {
+			body = GetProductsBodyResponse{
+				Message: "No products for the specified price found",
+				Data:    products,
+				Error:   false,
+			}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(body)
+
 	}
 }

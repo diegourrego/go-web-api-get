@@ -42,6 +42,7 @@ func (h *DefaultHTTP) Run() (err error) {
 	rt.Route("/products", func(rt chi.Router) {
 		rt.Get("/", hd.GetProducts())
 		rt.Get("/{id}", hd.GetProductByID())
+		rt.Get("/search", hd.GetProductsWithPriceHigherThan())
 	})
 
 	// run http service
