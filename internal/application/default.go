@@ -28,6 +28,7 @@ func (h *DefaultHTTP) Run() (err error) {
 		fmt.Println(err)
 		return
 	}
+
 	// repository
 	rp := repository.NewProductMap(loadData, 0)
 	// service
@@ -38,7 +39,11 @@ func (h *DefaultHTTP) Run() (err error) {
 	rt := chi.NewRouter()
 
 	// endpoints
-	rt.Get("/products", hd.GetProducts())
+	rt.Route("/products", func(rt chi.Router) {
+		rt.Get("/", hd.GetProducts())
+		rt.Get("/{id}", hd.GetProductByID())
+	})
+
 	// run http service
 	err = http.ListenAndServe(h.addr, rt)
 	return
