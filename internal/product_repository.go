@@ -1,7 +1,6 @@
 package internal
 
 type ProductRepository interface {
-	GetProducts()
-	GetProductByID()
-	Save(product *Product) (err error)
+	// GetProducts Get all the products
+	GetProducts() map[int]Product
 }
