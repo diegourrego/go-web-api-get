@@ -61,3 +61,15 @@ func (pm *ProductMap) Create(newProduct internal.Product) (internal.Product, err
 	return newProduct, nil
 
 }
+
+func (pm *ProductMap) Update(newProduct internal.Product) (internal.Product, error) {
+	_, err := pm.GetProductByID(newProduct.ID)
+	if err != nil {
+		return internal.Product{}, err
+	}
+
+	// Le asigno el nuevo valor al producto
+	pm.db[newProduct.ID] = newProduct
+
+	return newProduct, nil
+}

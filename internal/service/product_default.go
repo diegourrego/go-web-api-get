@@ -54,26 +54,9 @@ func (pd *ProductDefault) GetProductWithPriceHigherThan(productPrice float64) (m
 }
 
 func (pd *ProductDefault) Create(newProduct internal.Product) (internal.Product, error) {
-	// Validations
-	// Ningún campo puede estar vacío
-	if newProduct.Expiration == "" || newProduct.Name == "" || newProduct.CodeValue == "" ||
-		newProduct.Price == 0.0 || newProduct.Quantity == 0 {
-		return internal.Product{}, internal.ErrEmptyField
-	}
-
-	// La fecha de vencimiento debe tener el formato xx/xx/xxxx
-	expirationArray := strings.Split(newProduct.Expiration, "/")
-
-	if len(expirationArray) != 3 || len(expirationArray[0]) != 2 || len(expirationArray[1]) != 2 || len(expirationArray[2]) != 4 {
-		return internal.Product{}, internal.ErrInvalidDateFormat
-	}
-
-	// Día, mes y año deben ser valores válidos
-	_, err := strconv.Atoi(expirationArray[0])
-	_, err = strconv.Atoi(expirationArray[1])
-	_, err = strconv.Atoi(expirationArray[2])
-	if err != nil {
-		return internal.Product{}, internal.ErrInvalidDateFormat
+	// Validaciones
+	if err := validateBodyFields(newProduct); err != nil {
+		return internal.Product{}, err
 	}
 
 	product, err := pd.rp.Create(newProduct)
@@ -82,4 +65,44 @@ func (pd *ProductDefault) Create(newProduct internal.Product) (internal.Product,
 	}
 
 	return product, nil
+}
+
+func (pd *ProductDefault) Update(newProduct internal.Product) (internal.Product, error) {
+	// Validaciones
+	if err := validateBodyFields(newProduct); err != nil {
+		return internal.Product{}, err
+	}
+
+	productUpdated, err := pd.rp.Update(newProduct)
+	if err != nil {
+		return internal.Product{}, err
+	}
+
+	return productUpdated, nil
+}
+
+func validateBodyFields(product internal.Product) error {
+	// Validations
+	// Ningún campo puede estar vacío
+	if product.Expiration == "" || product.Name == "" || product.CodeValue == "" ||
+		product.Price == 0.0 || product.Quantity == 0 {
+		return internal.ErrEmptyField
+	}
+
+	// La fecha de vencimiento debe tener el formato xx/xx/xxxx
+	expirationArray := strings.Split(product.Expiration, "/")
+
+	if len(expirationArray) != 3 || len(expirationArray[0]) != 2 || len(expirationArray[1]) != 2 || len(expirationArray[2]) != 4 {
+		return internal.ErrInvalidDateFormat
+	}
+
+	// Día, mes y año deben ser valores válidos
+	_, err := strconv.Atoi(expirationArray[0])
+	_, err = strconv.Atoi(expirationArray[1])
+	_, err = strconv.Atoi(expirationArray[2])
+	if err != nil {
+		return internal.ErrInvalidDateFormat
+	}
+
+	return nil
 }

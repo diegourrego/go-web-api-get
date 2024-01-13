@@ -16,4 +16,5 @@ type ProductService interface {
 	GetProductWithPriceHigherThan(productPrice float64) (map[int]Product, error)
 
 	Create(newProduct Product) (Product, error)
+	Update(newProduct Product) (Product, error)
 }

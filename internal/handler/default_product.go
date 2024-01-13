@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"first_api/internal"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"sort"
@@ -217,20 +218,10 @@ func (dp *DefaultProducts) Create() http.HandlerFunc {
 			return
 		}
 
-		data := ProductJSON{
-			ID:          productCreated.ID,
-			Name:        productCreated.Name,
-			Quantity:    productCreated.Quantity,
-			IsPublished: productCreated.IsPublished,
-			Price:       productCreated.Price,
-			Expiration:  productCreated.Expiration,
-			CodeValue:   productCreated.CodeValue,
-		}
-
 		code := http.StatusOK
 		respBody := BodyResponse{
 			Message: "Product created successfully",
-			Data:    data,
+			Data:    productCreated,
 			Error:   false,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -238,4 +229,77 @@ func (dp *DefaultProducts) Create() http.HandlerFunc {
 		json.NewEncoder(w).Encode(respBody)
 
 	}
+}
+
+func (dp *DefaultProducts) Update() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Obtengo el id
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: "Bad request - invalid ID",
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+		}
+
+		var bodyReq BodyRequestProductJSON
+		if err := json.NewDecoder(r.Body).Decode(&bodyReq); err != nil {
+			code := http.StatusBadRequest
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			w.Write([]byte("Invalid body"))
+			return
+		}
+
+		// Debo serializar
+		product := internal.Product{
+			ID:          id,
+			CodeValue:   bodyReq.CodeValue,
+			Expiration:  bodyReq.Expiration,
+			Price:       bodyReq.Price,
+			Name:        bodyReq.Name,
+			Quantity:    bodyReq.Quantity,
+			IsPublished: bodyReq.IsPublished,
+		}
+
+		productUpdated, err := dp.sv.Update(product)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: err.Error(),
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+			return
+		}
+
+		code := http.StatusOK
+		body := BodyResponse{
+			Message: "Product updated successfully",
+			Data:    productUpdated,
+			Error:   false,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(body)
+
+	}
+}
+
+func ValidateKeyExist(mp map[string]any, keys ...string) (err error) {
+	for _, k := range keys {
+		if _, ok := mp[k]; !ok {
+			return fmt.Errorf("key %s not found", k)
+		}
+	}
+	return
 }
