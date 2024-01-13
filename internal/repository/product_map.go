@@ -42,3 +42,22 @@ func (pm *ProductMap) GetProductWithPriceHigherThan(productPrice float64) (map[i
 
 	return productsFounded, nil
 }
+
+func (pm *ProductMap) Create(newProduct internal.Product) (internal.Product, error) {
+
+	// Válido si el código del producto es único
+	for _, product := range pm.db {
+		if product.CodeValue == newProduct.CodeValue {
+			return internal.Product{}, internal.ErrCodeValueRepeated
+		}
+	}
+
+	// Le asigno el id correspondiente
+	pm.lastID = len(pm.db) + 1
+	newProduct.ID = pm.lastID
+
+	pm.db[newProduct.ID] = newProduct
+
+	return newProduct, nil
+
+}

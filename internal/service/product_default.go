@@ -2,6 +2,8 @@ package service
 
 import (
 	"first_api/internal"
+	"strconv"
+	"strings"
 )
 
 // ¡Acá debemos hacer las validaciones!
@@ -49,4 +51,35 @@ func (pd *ProductDefault) GetProductWithPriceHigherThan(productPrice float64) (m
 	}
 
 	return productsFounded, nil
+}
+
+func (pd *ProductDefault) Create(newProduct internal.Product) (internal.Product, error) {
+	// Validations
+	// Ningún campo puede estar vacío
+	if newProduct.Expiration == "" || newProduct.Name == "" || newProduct.CodeValue == "" ||
+		newProduct.Price == 0.0 || newProduct.Quantity == 0 {
+		return internal.Product{}, internal.ErrEmptyField
+	}
+
+	// La fecha de vencimiento debe tener el formato xx/xx/xxxx
+	expirationArray := strings.Split(newProduct.Expiration, "/")
+
+	if len(expirationArray) != 3 || len(expirationArray[0]) != 2 || len(expirationArray[1]) != 2 || len(expirationArray[2]) != 4 {
+		return internal.Product{}, internal.ErrInvalidDateFormat
+	}
+
+	// Día, mes y año deben ser valores válidos
+	_, err := strconv.Atoi(expirationArray[0])
+	_, err = strconv.Atoi(expirationArray[1])
+	_, err = strconv.Atoi(expirationArray[2])
+	if err != nil {
+		return internal.Product{}, internal.ErrInvalidDateFormat
+	}
+
+	product, err := pd.rp.Create(newProduct)
+	if err != nil {
+		return internal.Product{}, err
+	}
+
+	return product, nil
 }
