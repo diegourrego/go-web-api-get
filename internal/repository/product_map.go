@@ -73,3 +73,14 @@ func (pm *ProductMap) Update(newProduct internal.Product) (internal.Product, err
 
 	return newProduct, nil
 }
+
+func (pm *ProductMap) Delete(productID int) error {
+	_, err := pm.GetProductByID(productID)
+	if err != nil {
+		return err
+	}
+
+	delete(pm.db, productID)
+
+	return nil
+}

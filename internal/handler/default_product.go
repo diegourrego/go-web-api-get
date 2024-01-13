@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"first_api/internal"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"sort"
@@ -295,11 +294,53 @@ func (dp *DefaultProducts) Update() http.HandlerFunc {
 	}
 }
 
-func ValidateKeyExist(mp map[string]any, keys ...string) (err error) {
-	for _, k := range keys {
-		if _, ok := mp[k]; !ok {
-			return fmt.Errorf("key %s not found", k)
+func (dp *DefaultProducts) Delete() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: "Bad request - invalid ID",
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+			return
 		}
+
+		if err := dp.sv.Delete(id); err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: err.Error(),
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+			return
+		}
+
+		code := http.StatusOK
+		body := BodyResponse{
+			Message: "Product deleted successfully",
+			Data:    nil,
+			Error:   false,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(body)
 	}
-	return
 }
+
+//func ValidateKeyExist(mp map[string]any, keys ...string) (err error) {
+//	for _, k := range keys {
+//		if _, ok := mp[k]; !ok {
+//			return fmt.Errorf("key %s not found", k)
+//		}
+//	}
+//	return
+//}

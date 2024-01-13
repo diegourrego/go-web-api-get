@@ -45,6 +45,7 @@ func (h *DefaultHTTP) Run() (err error) {
 		rt.Get("/search", hd.GetProductsWithPriceHigherThan())
 		rt.Post("/", hd.Create())
 		rt.Put("/{id}", hd.Update())
+		rt.Delete("/{id}", hd.Delete())
 	})
 
 	// run http service

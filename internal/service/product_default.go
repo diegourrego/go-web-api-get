@@ -81,6 +81,20 @@ func (pd *ProductDefault) Update(newProduct internal.Product) (internal.Product,
 	return productUpdated, nil
 }
 
+func (pd *ProductDefault) Delete(productID int) error {
+	// Validations
+	if productID <= 0 {
+		return internal.ErrInvalidID
+	}
+
+	err := pd.rp.Delete(productID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func validateBodyFields(product internal.Product) error {
 	// Validations
 	// Ningún campo puede estar vacío
