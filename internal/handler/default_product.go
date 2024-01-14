@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"first_api/internal"
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 )
@@ -46,6 +48,11 @@ type BodyRequestProductJSON struct {
 
 func (dp *DefaultProducts) GetProducts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateToken(w, r); err != nil {
+			return
+		}
+
 		productsMap := dp.sv.GetProducts()
 
 		var products []internal.Product
@@ -74,6 +81,11 @@ func (dp *DefaultProducts) GetProducts() http.HandlerFunc {
 
 func (dp *DefaultProducts) GetProductByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateToken(w, r); err != nil {
+			return
+		}
+
 		id := chi.URLParam(r, "id")
 
 		// Válido que id sea un int
@@ -120,6 +132,11 @@ func (dp *DefaultProducts) GetProductByID() http.HandlerFunc {
 
 func (dp *DefaultProducts) GetProductsWithPriceHigherThan() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateToken(w, r); err != nil {
+			return
+		}
+
 		priceGtStr := r.URL.Query().Get("priceGt")
 		price, err := strconv.ParseFloat(priceGtStr, 64)
 		if err != nil {
@@ -183,6 +200,11 @@ func (dp *DefaultProducts) GetProductsWithPriceHigherThan() http.HandlerFunc {
 
 func (dp *DefaultProducts) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateToken(w, r); err != nil {
+			return
+		}
+
 		var body BodyRequestProductJSON
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			code := http.StatusBadRequest
@@ -232,6 +254,11 @@ func (dp *DefaultProducts) Create() http.HandlerFunc {
 
 func (dp *DefaultProducts) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateToken(w, r); err != nil {
+			return
+		}
+
 		// Obtengo el id
 		idStr := chi.URLParam(r, "id")
 		id, err := strconv.Atoi(idStr)
@@ -296,6 +323,11 @@ func (dp *DefaultProducts) Update() http.HandlerFunc {
 
 func (dp *DefaultProducts) Delete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateToken(w, r); err != nil {
+			return
+		}
+
 		idStr := chi.URLParam(r, "id")
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
@@ -344,3 +376,21 @@ func (dp *DefaultProducts) Delete() http.HandlerFunc {
 //	}
 //	return
 //}
+
+func validateToken(w http.ResponseWriter, r *http.Request) error {
+	// Set token in header
+	// Validate token
+	token := r.Header.Get("Authorization")
+	if token != os.Getenv("TOKEN") {
+		body := BodyResponse{
+			Message: "Unauthorized",
+			Data:    nil,
+			Error:   true,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(body)
+		return errors.New("unauthorized")
+	}
+	return nil
+}
