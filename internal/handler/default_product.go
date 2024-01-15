@@ -5,6 +5,7 @@ import (
 	"errors"
 	"first_api/internal"
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 	"os"
 	"sort"
@@ -13,11 +14,13 @@ import (
 
 type DefaultProducts struct {
 	sv internal.ProductService
+	ld internal.ProductStorage
 }
 
-func NewDefaultProducts(sv internal.ProductService) *DefaultProducts {
+func NewDefaultProducts(sv internal.ProductService, ld internal.ProductStorage) *DefaultProducts {
 	return &DefaultProducts{
 		sv: sv,
+		ld: ld,
 	}
 }
 
@@ -50,6 +53,7 @@ func (dp *DefaultProducts) GetProducts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := validateToken(w, r); err != nil {
+			log.Println(err)
 			return
 		}
 
@@ -83,6 +87,7 @@ func (dp *DefaultProducts) GetProductByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := validateToken(w, r); err != nil {
+			log.Println(err)
 			return
 		}
 
@@ -134,6 +139,7 @@ func (dp *DefaultProducts) GetProductsWithPriceHigherThan() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := validateToken(w, r); err != nil {
+			log.Println(err)
 			return
 		}
 
@@ -202,6 +208,7 @@ func (dp *DefaultProducts) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := validateToken(w, r); err != nil {
+			log.Println(err)
 			return
 		}
 
@@ -226,6 +233,8 @@ func (dp *DefaultProducts) Create() http.HandlerFunc {
 
 		// TODO: preguntar si el id se debería asignar acá o en el servicio
 		productCreated, err := dp.sv.Create(product)
+		// Save the product in file
+		err = dp.ld.SaveData(productCreated)
 		if err != nil {
 			code := http.StatusBadRequest
 			body := BodyResponse{
@@ -256,6 +265,7 @@ func (dp *DefaultProducts) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := validateToken(w, r); err != nil {
+			log.Println(err)
 			return
 		}
 
@@ -325,6 +335,7 @@ func (dp *DefaultProducts) Delete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := validateToken(w, r); err != nil {
+			log.Println(err)
 			return
 		}
 

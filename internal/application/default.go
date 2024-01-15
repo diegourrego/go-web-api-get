@@ -2,9 +2,9 @@ package application
 
 import (
 	"first_api/internal/handler"
-	"first_api/internal/loader"
 	"first_api/internal/repository"
 	"first_api/internal/service"
+	"first_api/internal/storage"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"net/http"
@@ -21,8 +21,8 @@ func NewDefaultHTTP(addr string) *DefaultHTTP {
 }
 
 func (h *DefaultHTTP) Run() (err error) {
-	// loader
-	loader := loader.NewDataLoaded()
+	// storage
+	loader := storage.NewDataLoaded()
 	loadData, err := loader.LoadData()
 	if err != nil {
 		fmt.Println(err)
@@ -34,7 +34,7 @@ func (h *DefaultHTTP) Run() (err error) {
 	// service
 	sv := service.NewProductDefault(rp)
 	// handler
-	hd := handler.NewDefaultProducts(sv)
+	hd := handler.NewDefaultProducts(sv, loader)
 	// router
 	rt := chi.NewRouter()
 

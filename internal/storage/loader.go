@@ -1,4 +1,4 @@
-package loader
+package storage
 
 import (
 	"encoding/json"
@@ -31,4 +31,24 @@ func (dl *DataLoaded) LoadData() (map[int]internal.Product, error) {
 	}
 
 	return dl.data, nil
+}
+
+func (dl *DataLoaded) SaveData(product internal.Product) error {
+	dl.data[product.ID] = product
+
+	var products []internal.Product
+	for _, product := range dl.data {
+		products = append(products, product)
+	}
+
+	// Guardo el map en un archivo
+	file, err := json.MarshalIndent(products, "", " ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile("./data/data.json", file, 0644); err != nil {
+		return err
+	}
+	return nil
 }
