@@ -6,8 +6,9 @@ import (
 	"first_api/internal/service"
 	"first_api/internal/storage"
 	"fmt"
-	"github.com/go-chi/chi/v5"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type DefaultHTTP struct {
@@ -45,6 +46,7 @@ func (h *DefaultHTTP) Run() (err error) {
 		rt.Get("/search", hd.GetProductsWithPriceHigherThan())
 		rt.Post("/", hd.Create())
 		rt.Put("/{id}", hd.Update())
+		rt.Patch("/{id}", hd.UpdatePartial())
 		rt.Delete("/{id}", hd.Delete())
 	})
 

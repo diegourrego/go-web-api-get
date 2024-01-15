@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"first_api/internal"
-	"github.com/go-chi/chi/v5"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type DefaultProducts struct {
@@ -231,9 +233,7 @@ func (dp *DefaultProducts) Create() http.HandlerFunc {
 			IsPublished: body.IsPublished,
 		}
 
-		// TODO: preguntar si el id se debería asignar acá o en el servicio
 		productCreated, err := dp.sv.Create(product)
-		// Save the product in file
 		err = dp.ld.SaveData(productCreated)
 		if err != nil {
 			code := http.StatusBadRequest
@@ -284,8 +284,27 @@ func (dp *DefaultProducts) Update() http.HandlerFunc {
 			json.NewEncoder(w).Encode(body)
 		}
 
-		var bodyReq BodyRequestProductJSON
-		if err := json.NewDecoder(r.Body).Decode(&bodyReq); err != nil {
+		bytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			code := http.StatusBadRequest
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			w.Write([]byte("Invalid body"))
+			return
+		}
+
+		// - get body to map[string]any
+		var bodyMap map[string]any
+		if err := json.Unmarshal(bytes, &bodyMap); err != nil {
+			code := http.StatusBadRequest
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			w.Write([]byte("Invalid body"))
+			return
+		}
+
+		var body BodyRequestProductJSON
+		if err := json.Unmarshal(bytes, &body); err != nil {
 			code := http.StatusBadRequest
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(code)
@@ -296,15 +315,15 @@ func (dp *DefaultProducts) Update() http.HandlerFunc {
 		// Debo serializar
 		product := internal.Product{
 			ID:          id,
-			CodeValue:   bodyReq.CodeValue,
-			Expiration:  bodyReq.Expiration,
-			Price:       bodyReq.Price,
-			Name:        bodyReq.Name,
-			Quantity:    bodyReq.Quantity,
-			IsPublished: bodyReq.IsPublished,
+			CodeValue:   body.CodeValue,
+			Expiration:  body.Expiration,
+			Price:       body.Price,
+			Name:        body.Name,
+			Quantity:    body.Quantity,
+			IsPublished: body.IsPublished,
 		}
 
-		productUpdated, err := dp.sv.Update(product)
+		productUpdated, err := dp.sv.Update(&product)
 		err = dp.ld.SaveData(productUpdated)
 		if err != nil {
 			code := http.StatusBadRequest
@@ -320,15 +339,105 @@ func (dp *DefaultProducts) Update() http.HandlerFunc {
 		}
 
 		code := http.StatusOK
-		body := BodyResponse{
+		bodyResponse := BodyResponse{
 			Message: "Product updated successfully",
 			Data:    productUpdated,
 			Error:   false,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
-		json.NewEncoder(w).Encode(body)
+		json.NewEncoder(w).Encode(bodyResponse)
 
+	}
+}
+
+func (dp *DefaultProducts) UpdatePartial() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := validateToken(w, r); err != nil {
+			log.Println(err)
+			return
+		}
+
+		// Obtengo el id
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: "Bad request - invalid ID",
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+		}
+
+		originalProduct, err := dp.sv.GetProductByID(id)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: err.Error(),
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+		}
+
+		var bodyReq = BodyRequestProductJSON{
+			// Acá hay que asignar los valores del originalProduct en la request
+			Name:        originalProduct.Name,
+			Quantity:    originalProduct.Quantity,
+			CodeValue:   originalProduct.CodeValue,
+			Expiration:  originalProduct.Expiration,
+			IsPublished: originalProduct.IsPublished,
+			Price:       originalProduct.Price,
+		}
+		if err := json.NewDecoder(r.Body).Decode(&bodyReq); err != nil {
+			// Acá se cambian únicamente los datos que vienen en el body en bodyReq
+			code := http.StatusBadRequest
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			w.Write([]byte("Invalid body"))
+			return
+		}
+
+		product := internal.Product{
+			ID:          id,
+			CodeValue:   bodyReq.CodeValue,
+			Expiration:  bodyReq.Expiration,
+			Price:       bodyReq.Price,
+			Name:        bodyReq.Name,
+			Quantity:    bodyReq.Quantity,
+			IsPublished: bodyReq.IsPublished,
+		}
+
+		product, err = dp.sv.Update(&product)
+		if err != nil {
+			code := http.StatusBadRequest
+			body := BodyResponse{
+				Message: err.Error(),
+				Data:    nil,
+				Error:   true,
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			json.NewEncoder(w).Encode(body)
+			return
+		}
+
+		code := http.StatusOK
+		bodyResponse := BodyResponse{
+			Message: "Product updated successfully",
+			Data:    product,
+			Error:   false,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(bodyResponse)
 	}
 }
 
@@ -338,6 +447,7 @@ func (dp *DefaultProducts) Delete() http.HandlerFunc {
 		if err := validateToken(w, r); err != nil {
 			log.Println(err)
 			return
+
 		}
 
 		idStr := chi.URLParam(r, "id")
@@ -379,16 +489,6 @@ func (dp *DefaultProducts) Delete() http.HandlerFunc {
 		json.NewEncoder(w).Encode(body)
 	}
 }
-
-//func ValidateKeyExist(mp map[string]any, keys ...string) (err error) {
-//	for _, k := range keys {
-//		if _, ok := mp[k]; !ok {
-//			return fmt.Errorf("key %s not found", k)
-//		}
-//	}
-//	return
-//}
-
 func validateToken(w http.ResponseWriter, r *http.Request) error {
 	// Set token in header
 	// Validate token

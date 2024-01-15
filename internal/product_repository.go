@@ -14,6 +14,6 @@ type ProductRepository interface {
 
 	Create(newProduct Product) (Product, error)
 
-	Update(newProduct Product) (Product, error)
+	Update(newProduct *Product) (Product, error)
 	Delete(productID int) error
 }

@@ -67,11 +67,11 @@ func (pd *ProductDefault) Create(newProduct internal.Product) (internal.Product,
 	return product, nil
 }
 
-func (pd *ProductDefault) Update(newProduct internal.Product) (internal.Product, error) {
+func (pd *ProductDefault) Update(newProduct *internal.Product) (internal.Product, error) {
 	// Validaciones
-	if err := validateBodyFields(newProduct); err != nil {
-		return internal.Product{}, err
-	}
+	//if err := validateBodyFields(newProduct); err != nil {
+	//	return internal.Product{}, err
+	//}
 
 	productUpdated, err := pd.rp.Update(newProduct)
 	if err != nil {
