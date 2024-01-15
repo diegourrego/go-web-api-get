@@ -305,6 +305,7 @@ func (dp *DefaultProducts) Update() http.HandlerFunc {
 		}
 
 		productUpdated, err := dp.sv.Update(product)
+		err = dp.ld.SaveData(productUpdated)
 		if err != nil {
 			code := http.StatusBadRequest
 			body := BodyResponse{
